@@ -1,0 +1,5 @@
+agno>=2.2.10
+streamlit
+openai
+apify-client<3
+requests
