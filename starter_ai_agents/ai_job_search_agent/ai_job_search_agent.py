@@ -25,6 +25,7 @@ POSTED_WITHIN = ["Past 24 hours", "Past week", "Past month", "Any time"]
 
 def make_cap_and_trim(rows: list):
     """Build a tool hook that caps the run size, trims each job and collects the rows."""
+    seen = set()
 
     def cap_and_trim(function_name: str, func: callable, args: dict):
         if not function_name.startswith("apify_actor_"):
@@ -64,8 +65,11 @@ def make_cap_and_trim(rows: list):
             elif item.get("result_type", "job") == "job":
                 row = {key: item.get(field) for key, field in KEEP_FIELDS.items()}
                 trimmed.append(row)
-                # Keep at most cap_value rows in total, even across several calls
-                if len(rows) < cap_value and row["link"] not in {r["link"] for r in rows}:
+                # Keep at most cap_value rows in total, even across several calls; dedupe on
+                # the link, or on title, company and location when a row has no link
+                key = row["link"] or (row["title"], row["company"], row["location"])
+                if len(rows) < cap_value and key not in seen:
+                    seen.add(key)
                     rows.append(row)
         return json.dumps(trimmed)
 
